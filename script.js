@@ -1,341 +1,681 @@
-// База данных цен и коэффициентов
-const pricingData = {
-    // Базовые ставки по режимам налогообложения (комфортный тариф)
-    taxRates: {
-        'usn_income': { base: 4000, min: 3000, max: 6000 },
-        'usn_income_expense': { base: 6000, min: 4500, max: 9000 },
-        'osno': { base: 10000, min: 7500, max: 15000 },
-        'patent': { base: 3500, min: 2500, max: 5000 },
-        'esh': { base: 5500, min: 4000, max: 8000 }
-    },
+/* Основные стили */
+:root {
+    --primary: #4361ee;
+    --primary-dark: #3a56d4;
+    --secondary: #7209b7;
+    --success: #4cc9f0;
+    --warning: #f72585;
+    --danger: #f72585;
+    --light: #f8f9fa;
+    --dark: #212529;
+    --gray: #6c757d;
+    --gray-light: #e9ecef;
+    --border-radius: 12px;
+    --box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
+}
 
-    // Стоимость за документ (комфортный тариф)
-    documentRates: {
-        perDocument: { base: 30, min: 20, max: 50 },
-        tiers: [
-            { max: 50, multiplier: 0.8 },
-            { max: 100, multiplier: 1.0 },
-            { max: 200, multiplier: 1.3 },
-            { max: 500, multiplier: 1.8 }
-        ]
-    },
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-    // Стоимость за сотрудника (комфортный тариф)
-    employeeRates: {
-        perEmployee: { base: 700, min: 500, max: 1200 },
-        tiers: [
-            { max: 5, multiplier: 1.0 },
-            { max: 10, multiplier: 0.9 },
-            { max: 20, multiplier: 0.8 },
-            { max: 50, multiplier: 0.7 }
-        ]
-    },
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--dark);
+}
 
-    // Стоимость за банк (комфортный тариф)
-    bankRates: {
-        perBank: { base: 1000, min: 800, max: 2000 },
-        firstBankFree: true
-    },
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--box-shadow);
+    overflow: hidden;
+}
 
-    // Дополнительные услуги (комфортный тариф)
-    additionalServices: {
-        'customs': { base: 5000, min: 4000, max: 8000 },
-        'marketplaces': { base: 3000, min: 2000, max: 5000 },
-        'foreign': { base: 4000, min: 3000, max: 7000 },
-        'liquidation': { base: 15000, min: 10000, max: 25000 },
-        'reporting': { base: 2000, min: 1500, max: 3000 }
-    },
+/* Шапка */
+.header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
 
-    // Коэффициенты для тарифов
-    coefficients: {
-        min: 0.7,    // Минимальный тариф = комфортный * 0.7
-        optimal: 1.0, // Комфортный тариф
-        max: 1.5     // Премиум тариф = комфортный * 1.5
+.logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+}
+
+.logo i {
+    font-size: 2.5rem;
+    color: var(--success);
+}
+
+.logo h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-top: 5px;
+}
+
+/* Основной контент */
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 30px;
+    padding: 30px;
+}
+
+@media (max-width: 1024px) {
+    .main-content {
+        grid-template-columns: 1fr;
     }
-};
-
-// DOM элементы
-const elements = {
-    taxMode: document.getElementById('taxMode'),
-    documents: document.getElementById('documents'),
-    documentsValue: document.getElementById('documentsValue'),
-    employees: document.getElementById('employees'),
-    employeesValue: document.getElementById('employeesValue'),
-    banks: document.getElementById('banks'),
-    banksValue: document.getElementById('banksValue'),
-    serviceCheckboxes: document.querySelectorAll('.service-checkbox'),
-    calculateBtn: document.getElementById('calculateBtn'),
-    optimalPrice: document.getElementById('optimalPrice'),
-    rangeMin: document.querySelector('#rangeMin .range-price'),
-    rangeOptimal: document.querySelector('#rangeOptimal .range-price'),
-    rangeMax: document.querySelector('#rangeMax .range-price'),
-    calculationTable: document.querySelector('#calculationTable tbody')
-};
-
-// Инициализация слайдеров
-function initializeSliders() {
-    // Слайдер документов
-    elements.documents.addEventListener('input', function() {
-        elements.documentsValue.textContent = this.value;
-    });
-
-    // Слайдер сотрудников
-    elements.employees.addEventListener('input', function() {
-        const value = parseInt(this.value);
-        elements.employeesValue.textContent = value + ' ' + getRussianWord(value, 'сотрудник', 'сотрудника', 'сотрудников');
-    });
-
-    // Слайдер банков
-    elements.banks.addEventListener('input', function() {
-        const value = parseInt(this.value);
-        elements.banksValue.textContent = value + ' ' + getRussianWord(value, 'банк', 'банка', 'банков');
-    });
 }
 
-// Функция для правильного склонения русских слов
-function getRussianWord(number, one, two, five) {
-    let n = Math.abs(number);
-    n %= 100;
-    if (n >= 5 && n <= 20) {
-        return five;
+/* Карточки */
+.card {
+    background: var(--light);
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    transition: var(--transition);
+}
+
+.card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+    color: var(--primary);
+    margin-bottom: 25px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Формы */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--dark);
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--gray-light);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: var(--transition);
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+}
+
+/* Слайдеры */
+.range-group {
+    margin-bottom: 10px;
+}
+
+.slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--gray-light);
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+    border: 3px solid white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.range-value {
+    text-align: center;
+    font-weight: 600;
+    color: var(--primary);
+    margin-top: 10px;
+    font-size: 1.1rem;
+}
+
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--gray);
+    margin-top: 5px;
+}
+
+/* Чекбоксы */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkbox {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    padding-left: 35px;
+    user-select: none;
+}
+
+.checkbox input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.checkmark {
+    position: absolute;
+    left: 0;
+    height: 22px;
+    width: 22px;
+    background-color: white;
+    border: 2px solid var(--gray-light);
+    border-radius: 5px;
+    transition: var(--transition);
+}
+
+.checkbox:hover .checkmark {
+    border-color: var(--primary);
+}
+
+.checkbox input:checked ~ .checkmark {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox input:checked ~ .checkmark:after {
+    display: block;
+}
+
+/* Кнопка */
+.btn-calculate {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: var(--transition);
+    margin-top: 20px;
+}
+
+.btn-calculate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.3);
+}
+
+.btn-calculate:active {
+    transform: translateY(0);
+}
+
+/* Результаты */
+.price-main {
+    text-align: center;
+    background: linear-gradient(135deg, #f0f4ff 0%, #e6f7ff 100%);
+    padding: 25px;
+    border-radius: var(--border-radius);
+    margin-bottom: 30px;
+    border: 2px dashed var(--primary);
+}
+
+.price-label {
+    font-size: 1.1rem;
+    color: var(--gray);
+    margin-bottom: 5px;
+}
+
+.price-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+    margin: 10px 0;
+}
+
+.price-period {
+    font-size: 1rem;
+    color: var(--gray);
+}
+
+/* Диапазоны цен */
+.price-ranges {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .price-ranges {
+        grid-template-columns: 1fr;
     }
-    n %= 10;
-    if (n === 1) {
-        return one;
-    }
-    if (n >= 2 && n <= 4) {
-        return two;
-    }
-    return five;
 }
 
-// Расчет стоимости документов с учетом объема
-function calculateDocumentCost(docCount, tariff = 'optimal') {
-    const baseRate = pricingData.documentRates.perDocument.base;
-    let multiplier = 1.0;
-
-    // Применяем множитель в зависимости от объема
-    for (const tier of pricingData.documentRates.tiers) {
-        if (docCount <= tier.max) {
-            multiplier = tier.multiplier;
-            break;
-        }
-    }
-
-    let cost = docCount * baseRate * multiplier;
-
-    // Применяем коэффициент тарифа
-    cost *= pricingData.coefficients[tariff];
-
-    return Math.round(cost);
+.price-range {
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--gray-light);
+    transition: var(--transition);
 }
 
-// Расчет стоимости сотрудников с учетом количества
-function calculateEmployeeCost(empCount, tariff = 'optimal') {
-    const baseRate = pricingData.employeeRates.perEmployee.base;
-    let multiplier = 1.0;
-
-    // Применяем множитель в зависимости от количества
-    for (const tier of pricingData.employeeRates.tiers) {
-        if (empCount <= tier.max) {
-            multiplier = tier.multiplier;
-            break;
-        }
-    }
-
-    let cost = empCount * baseRate * multiplier;
-
-    // Применяем коэффициент тарифа
-    cost *= pricingData.coefficients[tariff];
-
-    return Math.round(cost);
+.price-range:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow);
 }
 
-// Расчет стоимости банков
-function calculateBankCost(bankCount, tariff = 'optimal') {
-    const baseRate = pricingData.bankRates.perBank.base;
-    let effectiveCount = bankCount;
-
-    // Первый банк может быть бесплатным
-    if (pricingData.bankRates.firstBankFree && bankCount > 0) {
-        effectiveCount = bankCount - 1;
-    }
-
-    let cost = Math.max(0, effectiveCount) * baseRate;
-
-    // Применяем коэффициент тарифа
-    cost *= pricingData.coefficients[tariff];
-
-    return Math.round(cost);
+#rangeMin {
+    border-top: 4px solid var(--success);
 }
 
-// Расчет дополнительных услуг
-function calculateAdditionalServices(selectedServices, tariff = 'optimal') {
-    let total = 0;
-    const services = [];
-
-    selectedServices.forEach(service => {
-        if (pricingData.additionalServices[service]) {
-            const cost = pricingData.additionalServices[service].base * pricingData.coefficients[tariff];
-            total += Math.round(cost);
-            services.push({
-                name: getServiceName(service),
-                cost: Math.round(cost)
-            });
-        }
-    });
-
-    return { total, services };
+#rangeOptimal {
+    border-top: 4px solid var(--primary);
 }
 
-// Получение имени услуги
-function getServiceName(key) {
-    const names = {
-        'customs': 'Таможня и ВЭД',
-        'marketplaces': 'Маркетплейсы',
-        'foreign': 'Иностранные сотрудники',
-        'liquidation': 'Ликвидация/Реорганизация',
-        'reporting': 'Сдача нулевой отчётности'
-    };
-    return names[key] || key;
+#rangeMax {
+    border-top: 4px solid var(--warning);
 }
 
-// Форматирование числа с пробелами
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+.range-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
-// Основная функция расчета
-function calculatePrice() {
-    // Получаем значения из формы
-    const taxMode = elements.taxMode.value;
-    const docCount = parseInt(elements.documents.value);
-    const empCount = parseInt(elements.employees.value);
-    const bankCount = parseInt(elements.banks.value);
-
-    // Получаем выбранные дополнительные услуги
-    const selectedServices = Array.from(elements.serviceCheckboxes)
-        .filter(checkbox => checkbox.checked)
-        .map(checkbox => checkbox.value);
-
-    // Расчет для трех тарифов
-    const tariffs = ['min', 'optimal', 'max'];
-    const results = {};
-
-    tariffs.forEach(tariff => {
-        // Базовая ставка по налогообложению
-        const baseTaxCost = pricingData.taxRates[taxMode].base * pricingData.coefficients[tariff];
-
-        // Стоимость документов
-        const docCost = calculateDocumentCost(docCount, tariff);
-
-        // Стоимость сотрудников
-        const empCost = calculateEmployeeCost(empCount, tariff);
-
-        // Стоимость банков
-        const bankCost = calculateBankCost(bankCount, tariff);
-
-        // Стоимость дополнительных услуг
-        const addServices = calculateAdditionalServices(selectedServices, tariff);
-
-        // Итоговая стоимость
-        const total = Math.round(baseTaxCost + docCost + empCost + bankCost + addServices.total);
-
-        results[tariff] = {
-            total: total,
-            details: {
-                tax: Math.round(baseTaxCost),
-                documents: docCost,
-                employees: empCost,
-                banks: bankCost,
-                additional: addServices
-            }
-        };
-    });
-
-    // Обновление интерфейса
-    updateUI(results);
+.range-header i {
+    font-size: 1.5rem;
 }
 
-// Обновление интерфейса с результатами
-function updateUI(results) {
-    // Основная цена (оптимальный тариф)
-    elements.optimalPrice.textContent = `${formatNumber(results.optimal.total)} ₽`;
+#rangeMin .range-header i { color: var(--success); }
+#rangeOptimal .range-header i { color: var(--primary); }
+#rangeMax .range-header i { color: var(--warning); }
 
-    // Цены по тарифам
-    elements.rangeMin.textContent = `${formatNumber(results.min.total)} ₽`;
-    elements.rangeOptimal.textContent = `${formatNumber(results.optimal.total)} ₽`;
-    elements.rangeMax.textContent = `${formatNumber(results.max.total)} ₽`;
-
-    // Детализация расчета (для оптимального тарифа)
-    updateCalculationTable(results.optimal);
+.range-header h3 {
+    font-size: 1.2rem;
+    margin: 0;
 }
 
-// Обновление таблицы детализации
-function updateCalculationTable(result) {
-    const details = result.details;
-    const tbody = elements.calculationTable;
-    tbody.innerHTML = '';
+.range-price {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 15px 0;
+    text-align: center;
+}
 
-    // Базовая ставка
-    addTableRow('Базовая ставка (режим налогообложения)', '-', `${formatNumber(details.tax)} ₽`);
+.range-desc {
+    font-size: 0.9rem;
+    color: var(--gray);
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
 
-    // Документы
-    addTableRow('Обработка документов', `${elements.documents.value} шт.`, `${formatNumber(details.documents)} ₽`);
+.range-features {
+    list-style: none;
+    padding-left: 0;
+}
 
-    // Сотрудники
-    addTableRow('Ведение сотрудников', `${elements.employees.value} чел.`, `${formatNumber(details.employees)} ₽`);
+.range-features li {
+    padding: 6px 0;
+    padding-left: 25px;
+    position: relative;
+    font-size: 0.9rem;
+}
 
-    // Банки
-    addTableRow('Обслуживание банков', `${elements.banks.value} шт.`, `${formatNumber(details.banks)} ₽`);
+.range-features li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--success);
+    font-weight: bold;
+}
 
-    // Дополнительные услуги
-    if (details.additional.services.length > 0) {
-        details.additional.services.forEach(service => {
-            addTableRow(service.name, 'доп. услуга', `${formatNumber(service.cost)} ₽`);
-        });
-    } else {
-        addTableRow('Дополнительные услуги', 'не выбраны', `0 ₽`);
+/* Таблица детализации */
+.calculation-details {
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--gray-light);
+}
+
+.details-content {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+thead {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+}
+
+th {
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+}
+
+tbody tr {
+    border-bottom: 1px solid var(--gray-light);
+}
+
+tbody tr:hover {
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+td {
+    padding: 15px;
+}
+
+td:nth-child(3) {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* Подвал */
+.footer {
+    text-align: center;
+    padding: 25px;
+    background: var(--dark);
+    color: white;
+    margin-top: 30px;
+}
+
+.footer p {
+    margin: 5px 0;
+    opacity: 0.9;
+}
+
+.footer-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.price-range, .price-main {
+    animation: fadeIn 0.5s ease-out;
+}
+/* ===================== */
+/* МОБИЛЬНАЯ АДАПТИВНОСТЬ */
+/* ===================== */
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
     }
 
-    // Итоговая строка
-    addTableRow('ИТОГО', '', `${formatNumber(result.total)} ₽`, true);
-}
-
-// Добавление строки в таблицу
-function addTableRow(parameter, value, cost, isTotal = false) {
-    const row = document.createElement('tr');
-    if (isTotal) {
-        row.style.fontWeight = 'bold';
-        row.style.background = 'linear-gradient(135deg, rgba(67, 97, 238, 0.1) 0%, rgba(114, 9, 183, 0.1) 100%)';
+    .container {
+        border-radius: 15px;
+        margin: 0;
+        max-width: 100%;
     }
 
-    row.innerHTML = `
-        <td>${parameter}</td>
-        <td>${value}</td>
-        <td>${cost}</td>
-    `;
+    .header {
+        padding: 1.5rem 1rem;
+    }
 
-    elements.calculationTable.appendChild(row);
+    .logo {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .logo h1 {
+        font-size: 1.5rem;
+        line-height: 1.3;
+    }
+
+    .logo i {
+        font-size: 2rem;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+        padding: 0 10px;
+    }
+
+    .main-content {
+        padding: 20px;
+        gap: 20px;
+    }
+
+    .card {
+        padding: 20px 15px;
+    }
+
+    .card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+    }
+
+    /* Формы на мобильных */
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-control {
+        padding: 10px 12px;
+        font-size: 16px; /* Важно для iOS */
+    }
+
+    /* Улучшение для слайдеров */
+    .slider {
+        height: 10px;
+    }
+
+    .slider::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+
+    .range-value {
+        font-size: 1rem;
+        margin-top: 8px;
+    }
+
+    .range-labels {
+        font-size: 0.8rem;
+    }
+
+    /* Чекбоксы на мобильных */
+    .checkbox {
+        padding-left: 32px;
+        font-size: 0.95rem;
+    }
+
+    .checkmark {
+        width: 24px;
+        height: 24px;
+    }
+
+    /* Кнопка расчета */
+    .btn-calculate {
+        padding: 18px;
+        font-size: 1.1rem;
+        margin-top: 25px;
+    }
+
+    /* Основная цена на мобильных */
+    .price-main {
+        padding: 20px 15px;
+        margin-bottom: 25px;
+    }
+
+    .price-value {
+        font-size: 2.8rem;
+    }
+
+    /* Тарифы в одну колонку */
+    .price-ranges {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .price-range {
+        padding: 15px;
+    }
+
+    .range-price {
+        font-size: 1.8rem;
+        margin: 10px 0;
+    }
+
+    .range-desc {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+
+    .range-features li {
+        font-size: 0.85rem;
+        padding: 5px 0 5px 22px;
+    }
+
+    /* Таблица на мобильных */
+    .calculation-details {
+        padding: 15px;
+        overflow-x: auto;
+    }
+
+    table {
+        font-size: 0.9rem;
+        min-width: 500px; /* Для горизонтального скролла */
+    }
+
+    th, td {
+        padding: 12px 8px;
+    }
+
+    /* Подвал */
+    .footer {
+        padding: 20px 15px;
+    }
+
+    .footer p {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
 }
 
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация слайдеров
-    initializeSliders();
+/* Для очень маленьких экранов (до 480px) */
+@media (max-width: 480px) {
+    .logo h1 {
+        font-size: 1.3rem;
+    }
 
-    // Расчет при загрузке
-    calculatePrice();
+    .price-value {
+        font-size: 2.2rem;
+    }
 
-    // Обработчик кнопки расчета
-    elements.calculateBtn.addEventListener('click', calculatePrice);
+    .range-price {
+        font-size: 1.5rem;
+    }
 
-    // Перерасчет при изменении любых параметров
-    elements.taxMode.addEventListener('change', calculatePrice);
-    elements.documents.addEventListener('input', calculatePrice);
-    elements.employees.addEventListener('input', calculatePrice);
-    elements.banks.addEventListener('input', calculatePrice);
-    elements.serviceCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', calculatePrice);
-    });
-});
+    .btn-calculate {
+        padding: 16px;
+        font-size: 1rem;
+    }
+
+    .form-control {
+        font-size: 14px;
+    }
+}
+
+/* Исправление для iOS Safari */
+@supports (-webkit-touch-callout: none) {
+    .btn-calculate {
+        padding: 18px;
+    }
+
+    .form-control {
+        font-size: 16px; /* Отключает масштабирование в iOS */
+    }
+}
+
+/* Улучшение для landscape режима */
+@media (max-height: 500px) and (orientation: landscape) {
+    .main-content {
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .header {
+        padding: 1rem;
+    }
+
+    .logo h1 {
+        font-size: 1.2rem;
+    }
+}
