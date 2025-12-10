@@ -69,9 +69,7 @@ const elements = {
     rangeMin: document.querySelector('#rangeMin .range-price'),
     rangeOptimal: document.querySelector('#rangeOptimal .range-price'),
     rangeMax: document.querySelector('#rangeMax .range-price'),
-    calculationTable: document.querySelector('#calculationTable tbody'),
-    resetBtn: document.getElementById('resetBtn'),
-    shareBtn: document.getElementById('shareBtn')
+    calculationTable: document.querySelector('#calculationTable tbody')
 };
 
 // Инициализация слайдеров
@@ -79,21 +77,18 @@ function initializeSliders() {
     // Слайдер документов
     elements.documents.addEventListener('input', function() {
         elements.documentsValue.textContent = this.value;
-        calculatePrice(); // Авторасчет при изменении
     });
     
     // Слайдер сотрудников
     elements.employees.addEventListener('input', function() {
         const value = parseInt(this.value);
         elements.employeesValue.textContent = value + ' ' + getRussianWord(value, 'сотрудник', 'сотрудника', 'сотрудников');
-        calculatePrice(); // Авторасчет при изменении
     });
     
     // Слайдер банков
     elements.banks.addEventListener('input', function() {
         const value = parseInt(this.value);
         elements.banksValue.textContent = value + ' ' + getRussianWord(value, 'банк', 'банка', 'банков');
-        calculatePrice(); // Авторасчет при изменении
     });
 }
 
@@ -212,22 +207,16 @@ function formatNumber(num) {
 
 // Основная функция расчета
 function calculatePrice() {
-    console.log('Расчет начат...'); // Для отладки
-    
     // Получаем значения из формы
     const taxMode = elements.taxMode.value;
     const docCount = parseInt(elements.documents.value);
     const empCount = parseInt(elements.employees.value);
     const bankCount = parseInt(elements.banks.value);
     
-    console.log('Параметры:', { taxMode, docCount, empCount, bankCount });
-    
     // Получаем выбранные дополнительные услуги
     const selectedServices = Array.from(elements.serviceCheckboxes)
         .filter(checkbox => checkbox.checked)
         .map(checkbox => checkbox.value);
-    
-    console.log('Услуги:', selectedServices);
     
     // Расчет для трех тарифов
     const tariffs = ['min', 'optimal', 'max'];
@@ -262,8 +251,6 @@ function calculatePrice() {
                 additional: addServices
             }
         };
-        
-        console.log(`Тариф ${tariff}:`, results[tariff]);
     });
     
     // Обновление интерфейса
@@ -272,25 +259,13 @@ function calculatePrice() {
 
 // Обновление интерфейса с результатами
 function updateUI(results) {
-    console.log('Обновление UI:', results);
-    
     // Основная цена (оптимальный тариф)
-    if (elements.optimalPrice) {
-        elements.optimalPrice.textContent = `${formatNumber(results.optimal.total)} ₽`;
-    }
+    elements.optimalPrice.textContent = `${formatNumber(results.optimal.total)} ₽`;
     
     // Цены по тарифам
-    if (elements.rangeMin) {
-        elements.rangeMin.textContent = `${formatNumber(results.min.total)} ₽`;
-    }
-    
-    if (elements.rangeOptimal) {
-        elements.rangeOptimal.textContent = `${formatNumber(results.optimal.total)} ₽`;
-    }
-    
-    if (elements.rangeMax) {
-        elements.rangeMax.textContent = `${formatNumber(results.max.total)} ₽`;
-    }
+    elements.rangeMin.textContent = `${formatNumber(results.min.total)} ₽`;
+    elements.rangeOptimal.textContent = `${formatNumber(results.optimal.total)} ₽`;
+    elements.rangeMax.textContent = `${formatNumber(results.max.total)} ₽`;
     
     // Детализация расчета (для оптимального тарифа)
     updateCalculationTable(results.optimal);
@@ -298,8 +273,6 @@ function updateUI(results) {
 
 // Обновление таблицы детализации
 function updateCalculationTable(result) {
-    if (!elements.calculationTable) return;
-    
     const details = result.details;
     const tbody = elements.calculationTable;
     tbody.innerHTML = '';
@@ -343,96 +316,26 @@ function addTableRow(parameter, value, cost, isTotal = false) {
         <td>${cost}</td>
     `;
     
-    if (elements.calculationTable) {
-        elements.calculationTable.appendChild(row);
-    }
-}
-
-// Сброс формы
-function resetForm() {
-    elements.documents.value = 50;
-    elements.documentsValue.textContent = '50';
-    
-    elements.employees.value = 3;
-    elements.employeesValue.textContent = '3 сотрудника';
-    
-    elements.banks.value = 1;
-    elements.banksValue.textContent = '1 банк';
-    
-    elements.taxMode.value = 'usn_income';
-    
-    elements.serviceCheckboxes.forEach(checkbox => {
-        checkbox.checked = false;
-    });
-    
-    calculatePrice();
-}
-
-// Поделиться результатом
-function shareResult() {
-    const price = elements.optimalPrice.textContent;
-    const text = `💰 Рассчитал стоимость бухгалтерских услуг: ${price}/мес\n✨ Посчитайте и вы: ${window.location.href}`;
-    
-    if (navigator.share) {
-        navigator.share({
-            title: 'Калькулятор бухуслуг',
-            text: text,
-            url: window.location.href
-        });
-    } else {
-        // Копирование в буфер
-        navigator.clipboard.writeText(text).then(() => {
-            alert('Ссылка скопирована в буфер!');
-        });
-    }
+    elements.calculationTable.appendChild(row);
 }
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Страница загружена');
-    
     // Инициализация слайдеров
-    if (elements.documents && elements.employees && elements.banks) {
-        initializeSliders();
-    }
+    initializeSliders();
     
     // Расчет при загрузке
     calculatePrice();
     
     // Обработчик кнопки расчета
-    if (elements.calculateBtn) {
-        elements.calculateBtn.addEventListener('click', calculatePrice);
-    }
+    elements.calculateBtn.addEventListener('click', calculatePrice);
     
     // Перерасчет при изменении любых параметров
-    if (elements.taxMode) {
-        elements.taxMode.addEventListener('change', calculatePrice);
-    }
-    
-    if (elements.serviceCheckboxes.length > 0) {
-        elements.serviceCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', calculatePrice);
-        });
-    }
-    
-    // Кнопка сброса
-    if (elements.resetBtn) {
-        elements.resetBtn.addEventListener('click', resetForm);
-    }
-    
-    // Кнопка поделиться
-    if (elements.shareBtn) {
-        elements.shareBtn.addEventListener('click', shareResult);
-    }
-    
-    // Показываем, что скрипт загружен
-    console.log('Скрипт инициализирован');
+    elements.taxMode.addEventListener('change', calculatePrice);
+    elements.documents.addEventListener('input', calculatePrice);
+    elements.employees.addEventListener('input', calculatePrice);
+    elements.banks.addEventListener('input', calculatePrice);
+    elements.serviceCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', calculatePrice);
+    });
 });
-
-// Фолбэк если DOMContentLoaded не сработал
-setTimeout(function() {
-    if (document.querySelector('#optimalPrice').textContent === '0 ₽') {
-        console.log('Принудительный перерасчет...');
-        calculatePrice();
-    }
-}, 1000);
