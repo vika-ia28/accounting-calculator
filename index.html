@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умный калькулятор бухгалтерских услуг</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-calculator"></i>
+                <h1>Умный калькулятор бухгалтерских услуг</h1>
+            </div>
+            <p class="subtitle">Рассчитайте оптимальную стоимость услуг для вашего бизнеса</p>
+        </header>
+
+        <!-- Основной контент в две колонки -->
+        <div class="main-content">
+            <!-- Левая колонка - форма ввода -->
+            <div class="input-section">
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Параметры расчета</h2>
+
+                    <!-- Режим налогообложения -->
+                    <div class="form-group">
+                        <label for="taxMode"><i class="fas fa-balance-scale"></i> Режим налогообложения</label>
+                        <select id="taxMode" class="form-control">
+                            <option value="usn_income">УСН (Доходы) - 6%</option>
+                            <option value="usn_income_expense">УСН (Доходы-Расходы) - 15%</option>
+                            <option value="osno">ОСНО</option>
+                            <option value="patent">Патент</option>
+                            <option value="esh">ЕСХН</option>
+                        </select>
+                    </div>
+
+                    <!-- Количество документов в месяц -->
+                    <div class="form-group">
+                        <label for="documents"><i class="fas fa-file-invoice"></i> Документов в месяц</label>
+                        <div class="range-group">
+                            <input type="range" id="documents" min="10" max="500" value="50" class="slider">
+                            <div class="range-value">
+                                <span id="documentsValue">50</span> документов
+                            </div>
+                        </div>
+                        <div class="range-labels">
+                            <span>Мало (10)</span>
+                            <span>Средне (100)</span>
+                            <span>Много (500)</span>
+                        </div>
+                    </div>
+
+                    <!-- Количество сотрудников -->
+                    <div class="form-group">
+                        <label for="employees"><i class="fas fa-users"></i> Количество сотрудников</label>
+                        <div class="range-group">
+                            <input type="range" id="employees" min="1" max="50" value="3" class="slider">
+                            <div class="range-value">
+                                <span id="employeesValue">3</span> сотрудника
+                            </div>
+                        </div>
+                        <div class="range-labels">
+                            <span>1</span>
+                            <span>10</span>
+                            <span>50</span>
+                        </div>
+                    </div>
+
+                    <!-- Количество банков -->
+                    <div class="form-group">
+                        <label for="banks"><i class="fas fa-university"></i> Количество банков/счетов</label>
+                        <div class="range-group">
+                            <input type="range" id="banks" min="1" max="10" value="1" class="slider">
+                            <div class="range-value">
+                                <span id="banksValue">1</span> банк
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Дополнительные услуги -->
+                    <div class="form-group">
+                        <label><i class="fas fa-plus-circle"></i> Дополнительные услуги</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox">
+                                <input type="checkbox" value="customs" class="service-checkbox">
+                                <span class="checkmark"></span>
+                                Таможня и ВЭД
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" value="marketplaces" class="service-checkbox">
+                                <span class="checkmark"></span>
+                                Маркетплейсы
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" value="foreign" class="service-checkbox">
+                                <span class="checkmark"></span>
+                                Иностранные сотрудники
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" value="liquidation" class="service-checkbox">
+                                <span class="checkmark"></span>
+                                Ликвидация/Реорганизация
+                            </label>
+                            <label class="checkbox">
+                                <input type="checkbox" value="reporting" class="service-checkbox">
+                                <span class="checkmark"></span>
+                                Сдача отчётности (нулевой)
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Кнопка расчета -->
+                    <button id="calculateBtn" class="btn-calculate">
+                        <i class="fas fa-calculator"></i> Рассчитать стоимость
+                    </button>
+                </div>
+            </div>
+
+            <!-- Правая колонка - результаты -->
+            <div class="result-section">
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Рекомендуемая стоимость</h2>
+
+                    <!-- Основная цена -->
+                    <div class="price-main">
+                        <div class="price-label">Оптимальная цена:</div>
+                        <div class="price-value" id="optimalPrice">0 ₽</div>
+                        <div class="price-period">в месяц</div>
+                    </div>
+
+                    <!-- Диапазоны цен -->
+                    <div class="price-ranges">
+                        <div class="price-range" id="rangeMin">
+                            <div class="range-header">
+                                <i class="fas fa-arrow-down"></i>
+                                <h3>Минимум</h3>
+                            </div>
+                            <div class="range-price">0 ₽</div>
+                            <div class="range-desc">
+                                Базовая ставка, минимальный контроль. Риски на клиенте.
+                            </div>
+                            <ul class="range-features">
+                                <li>Только обязательные операции</li>
+                                <li>Электронная отчетность</li>
+                                <li>Консультации 2 часа/мес</li>
+                            </ul>
+                        </div>
+
+                        <div class="price-range" id="rangeOptimal">
+                            <div class="range-header">
+                                <i class="fas fa-check-circle"></i>
+                                <h3>Комфорт</h3>
+                            </div>
+                            <div class="range-price">0 ₽</div>
+                            <div class="range-desc">
+                                Полный пакет для уверенного ведения бизнеса.
+                            </div>
+                            <ul class="range-features">
+                                <li>Полное ведение учета</li>
+                                <li>Сдача всех отчетов</li>
+                                <li>Консультации 5 часов/мес</li>
+                                <li>Кадровый учет</li>
+                            </ul>
+                        </div>
+
+                        <div class="price-range" id="rangeMax">
+                            <div class="range-header">
+                                <i class="fas fa-rocket"></i>
+                                <h3>Премиум</h3>
+                            </div>
+                            <div class="range-price">0 ₽</div>
+                            <div class="range-desc">
+                                Для сложных случаев и максимального сервиса.
+                            </div>
+                            <ul class="range-features">
+                                <li>Приоритетное обслуживание</li>
+                                <li>Неограниченные консультации</li>
+                                <li>Аналитика и рекомендации</li>
+                                <li>Экстренная поддержка 24/7</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Детализация расчета -->
+                    <div class="calculation-details">
+                        <h3><i class="fas fa-list-alt"></i> Детализация расчета</h3>
+                        <div class="details-content">
+                            <table id="calculationTable">
+                                <thead>
+                                    <tr>
+                                        <th>Параметр</th>
+                                        <th>Значение</th>
+                                        <th>Стоимость</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Данные будут добавлены через JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Подвал -->
+        <footer class="footer">
+            <p>© 2024 Умный калькулятор бухгалтерских услуг. Данные носят рекомендательный характер.</p>
+            <p class="footer-note">
+                <i class="fas fa-info-circle"></i>
+                Цены сформированы на основе анализа рынка бухгалтерских услуг
+            </p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
