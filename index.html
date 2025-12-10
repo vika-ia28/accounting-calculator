@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0">
     <title>Умный калькулятор бухгалтерских услуг</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧮</text></svg>">
 </head>
 <body>
     <div class="container">
@@ -117,6 +118,12 @@
                     <button id="calculateBtn" class="btn-calculate">
                         <i class="fas fa-calculator"></i> Рассчитать стоимость
                     </button>
+
+                    <!-- Мобильная подсказка -->
+                    <div class="mobile-hint">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>На мобильном: используйте ползунки для точной настройки</span>
+                    </div>
                 </div>
             </div>
 
@@ -188,6 +195,10 @@
                     <!-- Детализация расчета -->
                     <div class="calculation-details">
                         <h3><i class="fas fa-list-alt"></i> Детализация расчета</h3>
+                        <div class="mobile-scroll-hint">
+                            <i class="fas fa-arrows-left-right"></i>
+                            <span>На мобильном: проведите вправо для просмотра всей таблицы</span>
+                        </div>
                         <div class="details-content">
                             <table id="calculationTable">
                                 <thead>
@@ -203,18 +214,56 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="action-buttons">
+                        <button class="btn-share" id="shareBtn">
+                            <i class="fas fa-share-alt"></i> Поделиться
+                        </button>
+                        <button class="btn-reset" id="resetBtn">
+                            <i class="fas fa-redo"></i> Сбросить
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Подвал -->
         <footer class="footer">
-            <p>© 2024 Умный калькулятор бухгалтерских услуг. Данные носят рекомендательный характер.</p>
+            <p>© 2025 Умный калькулятор бухгалтерских услуг. Данные носят рекомендательный характер.</p>
             <p class="footer-note">
                 <i class="fas fa-info-circle"></i>
                 Цены сформированы на основе анализа рынка бухгалтерских услуг
             </p>
+            <div class="footer-links">
+                <a href="https://vika-ia28.github.io/accounting-calculator/" class="site-link">
+                    <i class="fas fa-external-link-alt"></i>
+                    Открыть в полном размере
+                </a>
+                <span class="site-url" id="siteUrl">https://vika-ia28.github.io/accounting-calculator/</span>
+            </div>
         </footer>
+    </div>
+
+    <!-- Модальное окно для мобильных -->
+    <div class="mobile-modal" id="mobileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-mobile-alt"></i> Советы для мобильных</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    <li><i class="fas fa-arrows-alt-h"></i> Проводите пальцем по слайдерам</li>
+                    <li><i class="fas fa-table"></i> Таблицу можно прокручивать вбок</li>
+                    <li><i class="fas fa-expand"></i> Поверните телефон для лучшего обзора</li>
+                    <li><i class="fas fa-touch"></i> Все кнопки увеличены для удобства</li>
+                </ul>
+                <div class="modal-actions">
+                    <button class="btn-understood">Понятно</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
